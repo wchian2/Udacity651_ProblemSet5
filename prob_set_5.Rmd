@@ -1,0 +1,123 @@
+---
+title: "Data Analysis with R - Problem Set 5"
+author: "William W. Chiang"
+date: "January 7, 2016"
+output: html_document
+---
+***
+####Diamonds Data Set Description
+
+Notes: Prices of 50,000 round cut diamonds
+
+Description
+
+A dataset containing the prices and other attributes of almost 54,000 diamonds. The variables are as follows:
+
+Usage
+
+data(diamonds) Format
+
+A data frame with 53940 rows and 10 variables
+
+Details
+
+price. price in US dollars (\$326–\$18,823)
+
+carat. weight of the diamond (0.2–5.01)
+
+cut. quality of the cut (Fair, Good, Very Good, Premium, Ideal)
+
+colour. diamond colour, from J (worst) to D (best)
+
+clarity. a measurement of how clear the diamond is (I1 (worst), SI1, SI2, VS1, VS2, VVS1, VVS2, IF (best))
+
+x. length in mm (0–10.74)
+
+y. width in mm (0–58.9)
+
+z. depth in mm (0–31.8)
+
+depth. total depth percentage = z / mean(x, y) = 2 * z / (x + y) (43–79)
+
+table. width of top of diamond relative to widest point (43–95)
+
+***
+### Load ggplot2 package and diamond dataset
+```{r}
+library(ggplot2)
+data(diamonds)
+```
+
+***
+### Create a histogram of diamond prices. Facet the histogram by diamond color and use cut to color this histogram bars.
+```{r}
+ggplot(diamonds, aes(x=price)) + 
+  geom_histogram(aes(fill = cut), binwidth = 500) + 
+  facet_wrap(~color) +
+  scale_fill_brewer(type = 'qual')
+```
+
+***
+### Create a scatterplot of diamond price versus table and color the points by the cut of the diamond.
+```{r}
+ggplot(diamonds, aes(x = table, y = price)) +
+  geom_point(aes(color = cut)) +
+  scale_x_continuous(breaks = seq(43,95,2), labels = seq(43,95,2)) +
+  scale_color_brewer(type = 'qual')
+```
+
+Results: The typical range for the majority of diamonds of ideal and premium cut were 53-57 and 58-62, respectively.
+
+***
+### Create a scatterplot of diamond price vs. volume (x * y * z) and color the points by the clarity of diamonds. Use scale on the y-axis to take the log10 of price. You should also omit the top 1% of diamond volumts from the plot.
+
+```{r}
+# Add column containing volume to the diamonds dataset
+diamonds$volume <- diamonds$x * diamonds$y * diamonds$z
+
+# Create scatterplot of volume versus price with legend on clarity
+ggplot(data = subset(diamonds, volume < quantile(volume,probs = 0.99)), 
+       aes(x=volume,y=price)) +
+  geom_point(aes(color = clarity)) +
+  scale_y_log10() +
+  scale_color_brewer(type = 'div')
+```
+
+***
+### Create new variable called 'prop_initiated' (proportion of friendships initiated)
+```{r}
+pf <- read.csv('pseudo_facebook.tsv', sep="\t")
+pf$prop_initiated <- pf$friendships_initiated / pf$friend_count
+
+pf$prop_initiated <- ifelse(pf$friend_count >0,
+                            pf$friendships_initiated / pf$friend_count,
+                            0)
+```
+
+***
+### Create a line graph of the proportion of friendships initiated vs. tenure and color the line segment by 'year_joined.bucket'
+```{r}
+pf$year_joined <- floor(2014 - pf$tenure/365)
+pf$year_joined.bucket <- cut(pf$year_joined,
+                             breaks=c(2004,2009,2011,2012,2014))
+
+ggplot(subset(pf, tenure >=1),
+       aes(x=tenure, y = prop_initiated)) +
+  geom_line(stat="summary", fun.y=mean, aes(color = year_joined.bucket)) +
+  geom_smooth()
+
+x <- subset(pf, year_joined.bucket == "(2012,2014]")
+mean(x$prop_initiated,na.rm = TRUE)
+```
+Result: On average, people who joined Facebook after 2012 initiated the greatest proportion of its Fracebook friendships. In the group with the largest proportion of friendships initiated, the group's mean proportion of friendships initiated was 0.64 and his group had higher rates of friendship initiation possibly because of novelty factor behind new users in acquiring Facebook friends at higher rates than long time users who already built a friendship base in earlier times when Facebook was new.
+
+***
+### Create a scatterplot of the price/carot ratio of diamonds.
+```{r}
+ggplot(diamonds, aes(x = cut, y = price/carat)) +
+  geom_jitter(aes(color= color)) + 
+  facet_wrap(~ clarity) +
+  scale_color_brewer(type = 'div')
+```
+
+***
